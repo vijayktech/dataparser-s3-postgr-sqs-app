@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  dataparser-s3-postgr-sqs-app
+
+  Sample SAM Template for dataparser-s3-postgr-sqs-app
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+    Tracing: Active
+    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    LoggingConfig:
+      LogFormat: JSON
+  
+Resources:
+
+  S3DataBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: data-parse-bucket
+
+  DataFileParserFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: data-parser/
+      Handler: app.lambdaHandler      
+      Runtime: nodejs18.x
+      # Role: dataparser-s3-postgr-sqs-app-Lambda-Role      
+      Architectures:
+      - x86_64                   
+      Events:
+        S3DataBucket:
+          Type: S3
+          Properties:
+            Bucket: !Ref S3DataBucket
+            Events: 's3:ObjectCreated:*'
+            Filter:
+              S3Key:
+                Rules:
+                - Name: suffix      # or "suffix"
+                  Value: .xml      # The value to                   
+      EventInvokeConfig:
+        DestinationConfig:
+          OnSuccess:
+            Type: SQS
+            Destination: !GetAtt OnSuccessSqsQueue.Arn
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt OnFailureSqsQueue.Arn
+  
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+        - app.ts
+
+  ReadS3BucketPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: ReadS3BucketPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource:
+              - !Sub '${S3DataBucket.Arn}/*'
+      Roles:
+        - 'dataparser-s3-postgr-sqs--DataFileParserFunctionRol-0BYJfBB00Zs6'                         
+  
+  # The SQS Queue destination for lambda failures 
+  OnSuccessSqsQueue:
+    Type: AWS::SQS::Queue
+
+  #The SQS Queue destination for lambda failures 
+  OnFailureSqsQueue:
+    Type: AWS::SQS::Queue         
+
+  S3LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref DataFileParserFunction
+      Principal: s3.amazonaws.com
+      # Principal: '*'
+      SourceArn: !GetAtt S3DataBucket.Arn
+                         
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
