@@ -1,7 +1,7 @@
 import pg from "pg";
 
 const pool = new pg.Pool({
-    connectionString: "postgres://postgres:Insured345@db-config-sg.c10q828o8if9.ap-south-1.rds.amazonaws.com:5432/postgres"
+    connectionString: "<provide url>"
 });
 
 export async function getDetails (query: string) {
