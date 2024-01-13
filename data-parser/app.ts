@@ -15,7 +15,7 @@ function extractS3Info(event: S3CreateEvent) {
   return { bucket, key };
 }
 
-const supportedFormats = ['csv', 'xml', 'yaml', 'txt'];
+const supportedFormats = ['csv', 'xml', 'yaml'];
 
 export const lambdaHandler = async (event: S3CreateEvent, context: Context): Promise<string> => {
     let message: string = 'Lambda invoked successfully with Postgres';
