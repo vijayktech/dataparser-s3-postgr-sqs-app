@@ -1,0 +1,25 @@
+{
+    "employees" : [
+        {            
+            "name" : "emp_one",
+            "gender" : "male",
+            "designation" : "Sales Lead",
+            "email" : "one@gmail.com",
+            "date_of_join"  : "2022-08-08"
+        },
+        {           
+            "name" : "emp_two",
+            "gender" : "female",
+            "designation" : "Marketing Lead",
+            "email" : "two@gmail.com",
+            "date_of_join"  : "2020-10-10"
+        },
+        {           
+            "name" : "emp_three",
+            "gender" : "female",
+            "designation" : "Technony Lead",
+            "email" : "three@gmail.com",
+            "date_of_join"  : "2018-09-09"
+        }
+    ]
+}
