@@ -2,7 +2,7 @@ import pg from "pg";
 
 const pool = new pg.Pool({
     // connectionString: "<provide url>"     
-    
+    // connectionString: ""
 });
 
 export async function getDetails (query: string) {  
@@ -12,8 +12,7 @@ export async function getDetails (query: string) {
       await client.query('BEGIN')
   
       try {                                        
-        res = await client.query(query)
-        console.log('data inserted');
+        res = await client.query(query)        
         await client.query('COMMIT')
       } catch (err) {
         await client.query('ROLLBACK')
