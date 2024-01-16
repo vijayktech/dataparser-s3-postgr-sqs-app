@@ -1,0 +1,19 @@
+user_details:
+  - firstname: vijkonk27
+    lastname: kumar2
+    email: kvij3@gmail.com
+    mobileno: '988866666'
+    dob: 2020-05-05-
+    date_registered: '2022-06-06'
+    policy_type: term policy
+    dateofpayment: '2023-08-10'
+    premium_amount: '12000'
+  - firstname: vijkonk28
+    lastname: kumar2
+    email: kvij32@gmail.com
+    mobileno: '988862222'
+    dob: 2021-05-05-
+    date_registered: '2023-06-06'
+    policy_type: life policy
+    dateofpayment: '2024-08-10'
+    premium_amount: '15000'

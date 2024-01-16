@@ -4,8 +4,6 @@ import path from "path";
 import os from 'os';
 import downloadFileFromS3, {prepareEmployeeDataToInsert, prepareUserDataToInsert} from "./getFileFromS3";
 import { getDetails } from "./db-crud";
-import yaml from "js-yaml";
-import fs from "fs";
 
 const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-south-1' });
 
@@ -47,7 +45,7 @@ export const lambdaHandler = async (event: S3CreateEvent, context: Context): Pro
       
         if(dataRemovedRegex.includes("employees")){
           
-          let empObj = prepareEmployeeDataToInsert(dataRemovedRegex) ;
+          let empObj = prepareEmployeeDataToInsert(dataRemovedRegex, extensionWithoutDot);
 
               let insertQuery = `INSERT INTO public.employees( name, gender, designation, email, date_of_join) VALUES ` +
               empObj.map(
@@ -61,7 +59,7 @@ export const lambdaHandler = async (event: S3CreateEvent, context: Context): Pro
 
         } else if (dataRemovedRegex.includes("user_details")) {
           console.log(`User_Details file parsing!`);
-          let userObj = prepareUserDataToInsert(dataRemovedRegex);
+          let userObj = prepareUserDataToInsert(dataRemovedRegex, extensionWithoutDot);
           
           let insertUSerDetailsQuery = `INSERT INTO public.user_details( firstname, lastname, email, mobileno, dob) VALUES ` +
           userObj.map(
@@ -102,9 +100,64 @@ export const lambdaHandler = async (event: S3CreateEvent, context: Context): Pro
     
     // YAML File processing
     if (extensionWithoutDot == 'yaml') {
-      console.log(`File conversion from ${extensionWithoutDot} to YAML`);
-      const employees = yaml.load(fs.readFileSync(dataInString, { encoding: 'utf-8' }));
-      console.log('DowndledData in jsonData :' + employees);
+      console.log(`YAML File is parsing`);
+
+      if(dataRemovedRegex.includes("employees")){
+          
+        let empObj = prepareEmployeeDataToInsert(dataInString, extensionWithoutDot) ;
+        console.log(empObj);
+            let insertQuery = `INSERT INTO public.employees( name, gender, designation, email, date_of_join) VALUES ` +
+            empObj.map(
+          (emp) => `('${emp.name}', '${emp.gender}', '${emp.designation}', '${emp.email}', '${emp.date_of_join}')`)
+          .join(', ')
+
+      console.log(`json conversion Json : ${insertQuery}`)
+
+      const rows = await getDetails(insertQuery);
+      console.log(JSON.stringify(`Inserted Records are ${rows.rowCount}`))
+
+      }
+      else if (dataRemovedRegex.includes("user_details")) {
+        console.log(`User_Details file parsing!`);
+        let userObj = prepareUserDataToInsert(dataInString, extensionWithoutDot);
+        
+        let insertUSerDetailsQuery = `INSERT INTO public.user_details( firstname, lastname, email, mobileno, dob) VALUES ` +
+        userObj.map(
+          (user) => `('${user.firstname}', '${user.lastname}', '${user.email}', '${user.mobileno}', '${user.dob}')`)
+          .join(', ')
+      try {
+
+        console.log(`USer details : ${insertUSerDetailsQuery}`);
+        
+        const userResultSet  = await getDetails(insertUSerDetailsQuery);
+        console.log(`Inserted User_details Records are ${userResultSet.rowCount}`)
+
+        let insertUSerPolicyQuery = `INSERT INTO public.user_policies( user_id, date_registered, policy_type, dateofpayment, premium_amount) VALUES  `;
+        
+          for(let i=0; i< userObj.length; i++ ){
+            let user = userObj[i];
+            if(userObj.length < 2) {            
+              insertUSerPolicyQuery =  insertUSerPolicyQuery + `((select user_id from public.user_details where firstname='${user.firstname}'), '${user.date_registered}', '${user.policy_type}', '${user.dateofpayment}', '${user.premium_amount}')`            
+            }else {
+              insertUSerPolicyQuery =  insertUSerPolicyQuery + `((select user_id from public.user_details where firstname='${user.firstname}'), '${user.date_registered}', '${user.policy_type}', '${user.dateofpayment}', '${user.premium_amount}'),`              
+            }
+          }
+            
+            console.log(`USer Policy before slice : ${insertUSerPolicyQuery}`);
+            insertUSerPolicyQuery = insertUSerPolicyQuery.slice(0, -1);
+            console.log(`USer Policy : ${insertUSerPolicyQuery}`);
+            
+            const  userPloicyResultSet  = await getDetails(insertUSerPolicyQuery);
+            console.log(`Inserted User_policy Records are ${userPloicyResultSet.rowCount}`) 
+
+      } catch (error) {
+        console.log("Error in User details and policy insertion:" + error);
+      }          
+      }
+      else {
+          console.log("YAML file data is not proper");          
+      }
+
     }
 
   } catch (error) {

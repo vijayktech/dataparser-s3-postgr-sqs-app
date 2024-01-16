@@ -1,5 +1,6 @@
 import { S3Client, GetObjectCommandOutput, GetObjectCommand } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
+import YAML from "yaml";
 
 const s3 = new S3Client({ region: process.env.AWS_REGION || 'ap-south-1' });
 
@@ -31,9 +32,22 @@ export const asStream = (response: GetObjectCommandOutput) => {
      return stringData;
   }
 
-  export function prepareEmployeeDataToInsert(dataRemovedRegex: string) {
-    
-    const dataDownloadedObj: any = JSON.parse(dataRemovedRegex);
+  export function prepareEmployeeDataToInsert(dataRemovedRegex: string, fileType: string) {
+    console.log(`File type ${fileType}`);
+    // const dataDownloadedObj: any = JSON.parse(dataRemovedRegex);
+    let dataDownloadedObj: any ;
+    if(fileType == "json")
+    {
+       dataDownloadedObj = JSON.parse(dataRemovedRegex);
+      }
+    else {
+      if(fileType == "yaml"){
+        console.log("else if yaml")
+        console.log(dataRemovedRegex);        
+        dataDownloadedObj = YAML.parse(dataRemovedRegex);
+        console.log("end - else if yaml")
+      }
+    } 
   
     // console.log(dataDownloadedObj);
   
@@ -61,10 +75,18 @@ export const asStream = (response: GetObjectCommandOutput) => {
     return newEmpArray;
   }
 
-  export function prepareUserDataToInsert(dataRemovedRegex: string) {
+  export function prepareUserDataToInsert(dataRemovedRegex: string, fileType: string) {
     // console.log("User_details dataDownloadedObj :");
-    const dataDownloadedObj: any = JSON.parse(dataRemovedRegex);
-  
+    let dataDownloadedObj: any ;
+    if(fileType == "json")
+    {
+       dataDownloadedObj = JSON.parse(dataRemovedRegex);}
+    else {
+      if(fileType == "yaml"){
+        dataDownloadedObj = YAML.parse(dataRemovedRegex);
+      }
+    } 
+
       // console.log(dataDownloadedObj);
 
       var newUserArray: any[] = [];
